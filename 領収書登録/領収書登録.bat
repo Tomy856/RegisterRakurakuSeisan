@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-cd /d %~dp0\..\
+cd /d %~dp0..\
 
 rem 依存パッケージの確認
 node -e "require('exceljs')" 2>nul
