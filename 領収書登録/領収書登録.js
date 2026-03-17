@@ -22,8 +22,8 @@ if (fs.existsSync(PARENT_NM)) {
 const ExcelJS = require('exceljs');
 
 const DIR = __dirname;
-const XLSX_PATH = path.join(DIR, '領収書登録リスト.xlsx');
-const IGNORE = new Set(['領収書登録.bat', '領収書登録.js', '領収書登録リスト.xlsx']);
+const XLSX_PATH = path.join(DIR, '領収書登録リスト.xlsm');
+const IGNORE = new Set(['領収書登録.bat', '領収書登録.js', '領収書登録リスト.xlsm', '領収書登録リスト.xlsx']);
 
 async function run() {
     console.log('========================================');
