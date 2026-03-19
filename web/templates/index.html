@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>楽々精算登録</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header h1 { font-size: 1.6rem; color: #1a73e8; margin-bottom: 8px; }
+    .header p  { color: #666; font-size: 0.9rem; }
+
+    /* メニューアイテム */
+    .menu { display: flex; flex-direction: column; gap: 12px; }
+
+    .menu-item { border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+    /* メインボタン */
+    .menu-main {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; background: white;
+      border: none; width: 100%; cursor: pointer;
+      text-align: left; transition: background 0.15s;
+    }
+    .menu-main:hover { background: #fafafa; }
+    .menu-main .icon {
+      font-size: 1.8rem; width: 52px; height: 52px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .item-receipt .icon { background: #e8f0fe; }
+    .item-traffic .icon { background: #e6f4ea; }
+    .item-submit  .icon { background: #fce8e6; }
+
+    .menu-main .text { flex: 1; text-align: left; }
+    .menu-main .text strong { display: block; font-size: 1.05rem; color: #222; margin-bottom: 3px; }
+    .menu-main .text span  { font-size: 0.82rem; color: #888; }
+
+    .chevron {
+      color: #ccc; font-size: 1.1rem; transition: transform 0.25s;
+      display: inline-block;
+    }
+    .menu-item.open .chevron { transform: rotate(90deg); }
+
+    /* サブメニュー */
+    .submenu {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+      background: white; border-top: 1px solid #f0f0f0;
+    }
+    .menu-item.open .submenu { max-height: 200px; }
+
+    .submenu a {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 24px 14px 32px;
+      text-decoration: none; color: #333;
+      font-size: 0.95rem; font-weight: 500;
+      border-bottom: 1px solid #f8f8f8;
+      transition: background 0.12s, color 0.12s;
+    }
+    .submenu a:last-child { border-bottom: none; }
+    .submenu a:hover { background: #f5f8ff; color: #1a73e8; }
+
+    .item-receipt .submenu a:hover { background: #f0f4ff; color: #1a73e8; }
+    .item-traffic .submenu a:hover { background: #f0faf2; color: #34a853; }
+    .item-submit  .submenu a:hover { background: #fff5f4; color: #ea4335; }
+
+    .sub-icon { font-size: 1.1rem; width: 28px; text-align: center; }
+    .sub-arrow { margin-left: auto; color: #ddd; font-size: 1rem; }
+
+    /* 楽々清算に反映は直リンク */
+    .menu-link {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; background: white;
+      text-decoration: none; color: inherit;
+      transition: background 0.15s;
+    }
+    .menu-link:hover { background: #fff5f4; }
+    .menu-link .icon { font-size: 1.8rem; width: 52px; height: 52px; border-radius: 13px; display: flex; align-items: center; justify-content: center; }
+    .menu-link .text strong { display: block; font-size: 1.05rem; color: #222; margin-bottom: 3px; }
+    .menu-link .text span  { font-size: 0.82rem; color: #888; }
+    .menu-link .chevron { color: #ccc; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>💰 楽々精算登録</h1>
+    <p>かんたん登録サイト</p>
+  </div>
+
+  <div class="menu">
+
+    <!-- 領収書・請求書 -->
+    <div class="menu-item item-receipt" id="item-receipt">
+      <button class="menu-main" onclick="toggle('item-receipt')">
+        <div class="icon">🧾</div>
+        <div class="text">
+          <strong>領収書・請求書</strong>
+          <span>領収書・請求書のデータを一覧・登録できます</span>
+        </div>
+        <span class="chevron">›</span>
+      </button>
+      <div class="submenu">
+        <a href="/receipt/new">
+          <span class="sub-icon">✏️</span> 新規登録
+          <span class="sub-arrow">›</span>
+        </a>
+        <a href="/receipt">
+          <span class="sub-icon">📋</span> 一覧
+          <span class="sub-arrow">›</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 交通費 -->
+    <div class="menu-item item-traffic" id="item-traffic">
+      <button class="menu-main" onclick="toggle('item-traffic')">
+        <div class="icon">🚃</div>
+        <div class="text">
+          <strong>交通費</strong>
+          <span>交通費の明細を一覧・登録できます</span>
+        </div>
+        <span class="chevron">›</span>
+      </button>
+      <div class="submenu">
+        <a href="/traffic/new">
+          <span class="sub-icon">✏️</span> 新規登録
+          <span class="sub-arrow">›</span>
+        </a>
+        <a href="/traffic">
+          <span class="sub-icon">📋</span> 一覧
+          <span class="sub-arrow">›</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- 楽々清算に反映（直リンク） -->
+    <div class="menu-item item-submit">
+      <a href="/submit" class="menu-link">
+        <div class="icon">🚀</div>
+        <div class="text">
+          <strong>楽々清算に反映</strong>
+          <span>登録済みデータを楽々清算へ送信します</span>
+        </div>
+        <span class="chevron">›</span>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggle(id) {
+  const item = document.getElementById(id);
+  const isOpen = item.classList.contains('open');
+  // 他を閉じる
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>楽々清算に反映</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .back-btn { background: white; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; font-size: 1rem; box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-decoration: none; color: #333; }
+    .header h1 { font-size: 1.2rem; color: #333; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 20px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #444; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid #f0f4f8; display: flex; justify-content: space-between; align-items: center; }
+
+    /* タブ */
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tab {
+      padding: 10px 22px; border: none; border-radius: 10px; cursor: pointer;
+      font-size: 0.9rem; font-weight: 600; background: white;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08); color: #888; transition: all 0.15s;
+    }
+    .tab.active { background: #ea4335; color: white; }
+
+    /* テーブル */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { background: #f5f5f5; padding: 9px 10px; text-align: left; font-weight: 600; color: #555; }
+    td { padding: 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending    { background: #fff3cd; color: #856404; }
+    .badge-submitting { background: #cce5ff; color: #004085; }
+    .badge-submitted  { background: #d4edda; color: #155724; }
+    .badge-error      { background: #f8d7da; color: #721c24; }
+
+    .submit-btn {
+      background: #ea4335; color: white; border: none; border-radius: 8px;
+      padding: 8px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+    .submit-btn:hover { background: #c62828; }
+    .submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .empty { text-align: center; color: #aaa; padding: 40px; }
+
+    #message { margin-top: 12px; padding: 12px; border-radius: 10px; display: none; text-align: center; font-weight: 600; }
+    .msg-ok  { background: #d4edda; color: #155724; display: block !important; }
+    .msg-err { background: #f8d7da; color: #721c24; display: block !important; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <a href="/" class="back-btn">‹ 戻る</a>
+    <h1>🚀 楽々清算に反映</h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('receipt', this)">🧾 領収書・請求書</button>
+    <button class="tab" onclick="switchTab('traffic', this)">🚃 交通費精算</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span id="tab-title">領収書・請求書 一覧</span>
+      <button onclick="loadList()" style="background:none;border:none;color:#888;cursor:pointer;font-size:0.85rem;">🔄 更新</button>
+    </div>
+    <div id="list-area">読み込み中...</div>
+  </div>
+
+  <div id="message"></div>
+</div>
+
+<script>
+let currentTab = 'receipt';
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-title').textContent = tab === 'receipt' ? '領収書・請求書 一覧' : '交通費精算 一覧';
+  loadList();
+}
+
+async function loadList() {
+  const el = document.getElementById('list-area');
+  el.innerHTML = '読み込み中...';
+  const endpoint = currentTab === 'receipt' ? '/api/receipts' : '/api/traffic';
+  try {
+    const res = await fetch(endpoint);
+    const list = await res.json();
+    if (!list || list.length === 0) {
+      el.innerHTML = '<div class="empty">📭 データがありません<br><small>先に登録してください</small></div>';
+      return;
+    }
+    renderTable(list);
+  } catch(e) {
+    el.innerHTML = '<div class="empty">❌ 読み込みに失敗しました</div>';
+  }
+}
+
+function renderTable(list) {
+  const badgeMap = {
+    pending:    ['未送信',   'badge-pending'],
+    submitting: ['送信中…',  'badge-submitting'],
+    submitted:  ['送信済み', 'badge-submitted'],
+    error:      ['エラー',   'badge-error'],
+  };
+
+  const isReceipt = currentTab === 'receipt';
+  const rows = list.map(item => {
+    const [label, cls] = badgeMap[item.status] || ['不明', 'badge-pending'];
+    const canSubmit = item.status === 'pending' || item.status === 'error';
+    const title = isReceipt
+      ? `${item.doc_type} / ${item.applicant}`
+      : `${item.project} / ${item.applicant}`;
+    return `<tr>
+      <td>${item.created_at ? item.created_at.split('T')[0] : '-'}</td>
+      <td>${title}</td>
+      <td><span class="badge ${cls}">${label}</span>
+        ${item.error_msg ? `<br><small style="color:red">${item.error_msg}</small>` : ''}
+      </td>
+      <td>
+        ${canSubmit
+          ? `<button class="submit-btn" onclick="submitItem(${item.id}, this)">🚀 楽々清算に反映</button>`
+          : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('list-area').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>登録日</th><th>内容</th><th>状態</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+async function submitItem(id, btn) {
+  if (!confirm('楽々清算に登録しますか？')) return;
+  btn.disabled = true;
+  btn.textContent = '送信中…';
+  const endpoint = currentTab === 'receipt' ? `/api/receipts/${id}/submit` : `/api/traffic/${id}/submit`;
+  const res = await fetch(endpoint, { method: 'POST' });
+  const d = await res.json().catch(() => ({}));
+  const msg = document.getElementById('message');
+  if (res.ok) {
+    msg.textContent = '🚀 送信を開始しました。しばらくお待ちください。';
+    msg.className = 'msg-ok';
+    const poll = setInterval(async () => {
+      const ep2 = currentTab === 'receipt' ? `/api/receipts/${id}` : `/api/traffic/${id}`;
+      const r = await fetch(ep2);
+      const item = await r.json();
+      if (item.status === 'submitted' || item.status === 'error') {
+        clearInterval(poll);
+        loadList();
+      }
+    }, 5000);
+  } else {
+    msg.textContent = '❌ ' + (d.error || 'エラーが発生しました');
+    msg.className = 'msg-err';
+    btn.disabled = false;
+    btn.textContent = '🚀 楽々清算に反映';
+  }
+  setTimeout(() => msg.className = '', 5000);
+}
+
+loadList();
+setInterval(loadList, 15000);
+</script>
+</body>
+</html>

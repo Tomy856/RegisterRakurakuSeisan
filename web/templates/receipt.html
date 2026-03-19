@@ -1,0 +1,397 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>領収書/請求書【新規登録】</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #333; font-size: 14px; }
+
+    .page-header { background: white; padding: 14px 24px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 12px; position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 50px; }
+    .back-btn { background: #f0f0f0; border: none; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 0.88rem; text-decoration: none; color: #333; }
+    .back-btn:hover { background: #e0e0e0; }
+    .page-header h1 { font-size: 1.1rem; font-weight: 700; }
+
+    .layout { display: flex; height: calc(100vh - 50px); margin-top: 50px; }
+
+    /* 左フォーム */
+    .form-col { width: 50%; min-width: 360px; overflow-y: auto; background: white; border-right: 1px solid #ddd; padding: 20px 24px 80px; }
+
+    .info-banner { background: #e8f4fd; border: 1px solid #b3d7f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.82rem; color: #1a5276; display: flex; gap: 10px; }
+
+    .form-table { width: 100%; border-collapse: collapse; }
+    .form-table tr { border-bottom: 1px solid #e8e8e8; }
+    .form-table td { padding: 9px 8px; vertical-align: middle; }
+    .form-table .label-cell { width: 130px; font-weight: 600; font-size: 0.85rem; color: #444; background: #f8f8f8; padding: 9px 12px; white-space: nowrap; }
+    .form-table .label-cell .req { color: #e53935; margin-left: 2px; }
+    .form-table .label-cell .help { display: inline-block; width: 16px; height: 16px; background: #1a73e8; color: white; border-radius: 50%; font-size: 0.7rem; text-align: center; line-height: 16px; cursor: pointer; margin-left: 4px; }
+
+    .attach-area { display: flex; align-items: center; gap: 10px; border: 1.5px dashed #b0c4de; border-radius: 6px; padding: 10px 14px; cursor: pointer; transition: all 0.15s; }
+    .attach-area:hover, .attach-area.drag-over { border-color: #1a73e8; background: #f0f6ff; }
+    .attach-btn { background: white; border: 1.5px solid #1a73e8; color: #1a73e8; border-radius: 5px; padding: 6px 14px; font-size: 0.88rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .attach-hint { color: #888; font-size: 0.82rem; }
+    .file-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .file-tag { background: #e8f0fe; color: #1a73e8; border-radius: 4px; padding: 3px 10px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; }
+    .file-tag button { background: none; border: none; color: #999; cursor: pointer; }
+
+    .applicant-row { display: flex; gap: 8px; align-items: center; }
+    .applicant-row input { width: 80px; }
+    .search-btn { background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; cursor: pointer; }
+    .applicant-name { font-size: 0.9rem; }
+
+    .radio-group { display: flex; gap: 20px; flex-wrap: wrap; }
+    .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 0.88rem; }
+    .radio-group input[type=radio] { accent-color: #1a73e8; }
+
+    input[type=text], input[type=number] { border: 1px solid #ccc; border-radius: 4px; padding: 6px 10px; font-size: 0.88rem; width: 100%; }
+    input:focus { outline: none; border-color: #1a73e8; }
+
+    .doc-section { border: 1px solid #ddd; border-radius: 6px; margin: 12px 0; overflow: hidden; }
+    .doc-section-title { background: #e8e8e8; padding: 8px 14px; font-weight: 700; font-size: 0.88rem; color: #444; display: flex; justify-content: space-between; align-items: center; }
+    .doc-remove-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 1rem; }
+    .doc-remove-btn:hover { color: #e53935; }
+
+    .date-row { display: flex; align-items: center; gap: 6px; }
+    .date-row input { width: 52px; text-align: center; }
+    .date-row input.day { width: 44px; }
+    .date-row span { color: #666; font-size: 0.85rem; }
+    .date-cal { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 2px; }
+
+    .reg-num-area { display: flex; flex-direction: column; gap: 6px; }
+    .reg-check { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; }
+    .reg-check input[type=checkbox] { accent-color: #1a73e8; }
+
+    .amount-list { display: flex; flex-direction: column; gap: 6px; }
+    .amount-row { display: flex; align-items: center; gap: 6px; }
+    .amount-row .num { color: #888; font-size: 0.82rem; min-width: 18px; }
+    .amount-row input { width: 110px; text-align: right; }
+    .amount-row select { border: 1px solid #ccc; border-radius: 4px; padding: 6px 8px; font-size: 0.88rem; background: white; width: 90px; }
+    .amount-row .del-amt { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; }
+    .amount-row .del-amt:hover { color: #e53935; }
+    .add-amount-btn { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 5px 12px; font-size: 0.82rem; cursor: pointer; color: #555; display: flex; align-items: center; gap: 4px; width: fit-content; margin-top: 4px; }
+    .add-amount-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+
+    .add-doc-btn { border: 1px solid #ccc; background: white; border-radius: 6px; padding: 9px 18px; font-size: 0.88rem; cursor: pointer; color: #555; display: flex; align-items: center; gap: 6px; margin: 4px 0 16px; }
+    .add-doc-btn:hover { border-color: #1a73e8; color: #1a73e8; }
+
+    /* 注意事項 */
+    .caution-box { background: #fffde7; border: 1px solid #f9e04b; border-radius: 6px; font-size: 0.8rem; color: #5d4037; line-height: 1.8; overflow: hidden; margin-bottom: 8px; }
+    .caution-block { display: flex; gap: 8px; padding: 10px 14px; }
+    .caution-block + .caution-block { border-top: 1px solid #f9e04b; }
+    .caution-icon { color: #e65100; font-weight: 900; font-size: 1rem; flex-shrink: 0; width: 16px; text-align: center; }
+
+    /* フッター */
+    .form-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ddd; padding: 12px 24px; display: flex; align-items: center; justify-content: center; gap: 12px; z-index: 10; }
+    .continue-check { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; }
+    .continue-check input { accent-color: #1a73e8; }
+    .footer-spacer { display: none; }
+    .btn-confirm { background: #1a73e8; color: white; border: none; border-radius: 6px; padding: 10px 28px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+    .btn-confirm:hover { background: #1558b0; }
+    .btn-cancel { background: white; color: #333; border: 1.5px solid #ccc; border-radius: 6px; padding: 10px 20px; font-size: 0.95rem; cursor: pointer; text-decoration: none; }
+    .btn-cancel:hover { background: #f5f5f5; }
+
+    /* 右プレビュー */
+    .preview-col { flex: 1; background: #606060; display: flex; flex-direction: column; overflow: hidden; }
+    .preview-toolbar { background: #404040; padding: 8px 14px; display: flex; align-items: center; gap: 10px; color: #ccc; font-size: 0.82rem; }
+    .preview-toolbar button { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 3px 8px; }
+    .preview-toolbar button:hover { color: white; }
+    .preview-toolbar .spacer { flex: 1; }
+    .preview-body { flex: 1; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 0.9rem; flex-direction: column; gap: 12px; }
+    .preview-body .hint { font-size: 0.82rem; color: #999; }
+
+    #message { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: none; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .msg-ok  { background: #d4edda; color: #155724; display: block !important; }
+    .msg-err { background: #f8d7da; color: #721c24; display: block !important; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <a href="/" class="back-btn">‹ トップ</a>
+  <h1>領収書/請求書【新規登録】</h1>
+</div>
+
+<div class="layout">
+
+  <!-- 左：フォーム -->
+  <div class="form-col">
+
+    <div class="info-banner">
+      <span>ℹ️</span>
+      <span>領収書/請求書の自動読み取り機能が有効になっています。<br>
+      選択したファイルから自動的に「取引日」「受領日」「事業者登録番号」「金額」「取引先名」を読み取ります。</span>
+    </div>
+
+    <table class="form-table">
+      <tr>
+        <td class="label-cell">添付ファイル<span class="req">*</span></td>
+        <td>
+          <div id="file-name-display" style="font-size:0.83rem;color:#555;padding:4px 2px;min-height:22px;"></div>
+          <div class="attach-area" id="dropzone" onclick="document.getElementById('file-input').click()">
+            <button class="attach-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">ファイルを選択</button>
+            <span class="attach-hint">またはドラッグ＆ドロップ</span>
+          </div>
+          <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png,.heic" style="display:none">
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">申請者<span class="req">*</span></td>
+        <td>
+          <div class="applicant-row">
+            <input type="text" id="applicant-code" placeholder="00366">
+            <button class="search-btn">🔍</button>
+            <span class="applicant-name" id="applicant-name">冨田 拓也</span>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">書類区分<span class="req">*</span></td>
+        <td>
+          <div class="radio-group">
+            <label><input type="radio" name="doc_type" value="領収書" checked> 領収書</label>
+            <label><input type="radio" name="doc_type" value="請求書"> 請求書</label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">保存形式<span class="help" title="電帳法の保存形式">?</span></td>
+        <td>
+          <div class="radio-group">
+            <label><input type="radio" name="storage_type" value="電子取引"> 電子取引</label>
+            <label><input type="radio" name="storage_type" value="スキャナ保存" checked> スキャナ保存</label>
+            <label><input type="radio" name="storage_type" value="未指定"> 未指定</label>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <div id="doc-list"></div>
+
+    <button class="add-doc-btn" onclick="addDoc()">＋ 追加</button>
+
+    <div class="caution-box">
+      <div class="caution-block">
+        <span class="caution-icon">!</span>
+        <div>
+          <strong>[ 注意事項 ] 日付項目の区別について</strong><br>
+          ・「取引日」には、領収書/請求書に記載された日付を入力してください。<br>
+          ・「受領日」には、領収書/請求書を受け取った日付を入力してください。<br>
+          ・ 本人が受領した場合は、受領書類へ署名のうえ、期間内に登録してください。<br>
+          ※ 2022年1月の電子帳簿保存法改正施行によりスキャナで読取る際の署名が不要になりました。<br>
+          　運用方法については管理者にご確認ください。
+        </div>
+      </div>
+      <div class="caution-block">
+        <span class="caution-icon">!</span>
+        <div>
+          <strong>[ 注意事項 ] 金額を分けて入力した場合、または複数の書類を追加する場合</strong><br>
+          ・別々の伝票で申請することはできません。<br>
+          ・追加されたすべての金額、書類を申請する必要があります。
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 右：PDFプレビュー -->
+  <div class="preview-col">
+    <div class="preview-toolbar">
+      <button>«</button>
+      <button>↺</button>
+      <span>— 100% +</span>
+      <span>‹ <span id="preview-page">0 / 0</span> ›</span>
+      <span class="spacer"></span>
+      <button>⬇</button>
+      <button>🖨</button>
+    </div>
+    <div class="preview-body" id="preview-body">
+      <span>ファイルがアップロードされていません。</span>
+      <span class="hint">左のフォームからファイルを選択してください</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- フッター -->
+<div class="form-footer">
+  <label class="continue-check">
+    <input type="checkbox" id="continue-check"> 続けて登録する
+  </label>
+  <span class="footer-spacer"></span>
+  <a href="/receipt" class="btn-cancel">キャンセル</a>
+  <button class="btn-confirm" onclick="save()">確認</button>
+</div>
+
+<div id="message"></div>
+
+<template id="doc-tmpl">
+  <div class="doc-section">
+    <div class="doc-section-title">
+      <span>書類(<span class="doc-num"></span>)</span>
+      <button class="doc-remove-btn" onclick="removeDoc(this)">✕</button>
+    </div>
+    <table class="form-table">
+      <tr>
+        <td class="label-cell">取引日<span class="req">*</span></td>
+        <td>
+          <div class="date-row">
+            <input type="text" class="f-trade-y" placeholder="2025" maxlength="4">年
+            <input type="text" class="f-trade-m" placeholder="3" maxlength="2">月
+            <input type="text" class="f-trade-d day" placeholder="19" maxlength="2">日
+            <button class="date-cal" onclick="setToday(this,'trade')">📅</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">受領日<span class="req">*</span></td>
+        <td>
+          <div class="date-row">
+            <input type="text" class="f-receive-y" placeholder="2025" maxlength="4">年
+            <input type="text" class="f-receive-m" placeholder="3" maxlength="2">月
+            <input type="text" class="f-receive-d day" placeholder="19" maxlength="2">日
+            <button class="date-cal" onclick="setToday(this,'receive')">📅</button>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">事業者登録番号<span class="help" title="T＋13桁">?</span></td>
+        <td>
+          <div class="reg-num-area">
+            <label class="reg-check">
+              <input type="checkbox" class="f-has-reg" checked>
+              <span>T＋13桁の番号が、書類に記載されている</span>
+            </label>
+            <input type="text" class="f-reg-num" placeholder="T1234567890123" maxlength="14" style="width:180px">
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">取引先名<span class="req">*</span></td>
+        <td><input type="text" class="f-partner" placeholder="株式会社〇〇"></td>
+      </tr>
+      <tr>
+        <td class="label-cell">金額<span class="req">*</span></td>
+        <td>
+          <div class="amount-list">
+            <div class="amount-row">
+              <span class="num">1.</span>
+              <input type="number" class="f-amount" placeholder="0" min="0" value="0">
+              <select class="f-unit">
+                <option>円</option><option>USD</option><option>EUR</option>
+                <option>CAD</option><option>AUD</option><option>NTD</option>
+                <option>km(ガソリン)</option>
+              </select>
+              <button class="del-amt" onclick="delAmount(this)" style="display:none">✕</button>
+            </div>
+          </div>
+          <button class="add-amount-btn" onclick="addAmount(this)">＋ 追加</button>
+        </td>
+      </tr>
+      <tr>
+        <td class="label-cell">備考</td>
+        <td><input type="text" class="f-memo"></td>
+      </tr>
+    </table>
+  </div>
+</template>
+
+<script>
+let uploadedFile = null;
+
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+});
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(f) {
+  uploadedFile = f;
+  document.getElementById('file-name-display').innerHTML = '<span style="color:#1a73e8;font-weight:600;">' + f.name + '</span>';
+  if (f.type === 'application/pdf') showPdfPreview(f);
+}
+function showPdfPreview(file) {
+  const url = URL.createObjectURL(file);
+  document.getElementById('preview-body').innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;"></iframe>';
+  document.getElementById('preview-body').innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;"></iframe>';
+}
+
+let docCount = 0;
+function addDoc() {
+  docCount++;
+  const tmpl = document.getElementById('doc-tmpl').content.cloneNode(true);
+  const sec = tmpl.querySelector('.doc-section');
+  sec.querySelector('.doc-num').textContent = docCount;
+  sec.querySelector('.f-trade-y').value = today.getFullYear();
+  sec.querySelector('.f-trade-m').value = today.getMonth() + 1;
+  sec.querySelector('.f-trade-d').value = today.getDate();
+  sec.querySelector('.f-receive-y').value = today.getFullYear();
+  sec.querySelector('.f-receive-m').value = today.getMonth() + 1;
+  sec.querySelector('.f-receive-d').value = today.getDate();
+  document.getElementById('doc-list').appendChild(tmpl);
+  renumber();
+}
+function removeDoc(btn) {
+  btn.closest('.doc-section').remove();
+  renumber();
+}
+function renumber() {
+  document.querySelectorAll('.doc-section .doc-num').forEach((el, i) => el.textContent = i + 1);
+  docCount = document.querySelectorAll('.doc-section').length;
+}
+function setToday(btn, type) {
+  const s = btn.closest('.doc-section');
+  s.querySelector('.f-' + type + '-y').value = today.getFullYear();
+  s.querySelector('.f-' + type + '-m').value = today.getMonth() + 1;
+  s.querySelector('.f-' + type + '-d').value = today.getDate();
+}
+function addAmount(btn) {
+  const list = btn.previousElementSibling;
+  const num = list.querySelectorAll('.amount-row').length + 1;
+  const row = document.createElement('div');
+  row.className = 'amount-row';
+  row.innerHTML = '<span class="num">' + num + '.</span>' +
+    <input type="number" class="f-amount" placeholder="0" min="0" value="0">
+    <select class="f-unit"><option>円</option><option>USD</option><option>EUR</option><option>CAD</option><option>AUD</option><option>NTD</option><option>km(ガソリン)</option></select>
+    '<button class="del-amt" onclick="delAmount(this)">&#x2715;</button>';
+  list.appendChild(row);
+  list.querySelectorAll('.del-amt').forEach(b => b.style.display = '');
+}
+function delAmount(btn) {
+  const list = btn.closest('.amount-list');
+  if (list.querySelectorAll('.amount-row').length > 1) {
+    btn.closest('.amount-row').remove();
+    list.querySelectorAll('.amount-row .num').forEach((n, i) => n.textContent = (i+1) + '.');
+    if (list.querySelectorAll('.amount-row').length === 1) list.querySelector('.del-amt').style.display = 'none';
+  }
+}
+async function save() {
+  const docs = [];
+  document.querySelectorAll('.doc-section').forEach(sec => {
+    const amounts = [];
+    sec.querySelectorAll('.amount-row').forEach(r => amounts.push({ value: parseFloat(r.querySelector('.f-amount').value)||0, unit: r.querySelector('.f-unit').value }));
+    const y=sec.querySelector('.f-trade-y').value, m=String(sec.querySelector('.f-trade-m').value).padStart(2,'0'), d=String(sec.querySelector('.f-trade-d').value).padStart(2,'0');
+    const ry=sec.querySelector('.f-receive-y').value, rm=String(sec.querySelector('.f-receive-m').value).padStart(2,'0'), rd=String(sec.querySelector('.f-receive-d').value).padStart(2,'0');
+    docs.push({ trade_date: y+'-'+m+'-'+d, receive_date: ry+'-'+rm+'-'+rd, has_reg_num:sec.querySelector('.f-has-reg').checked, reg_num:sec.querySelector('.f-reg-num').value, partner:sec.querySelector('.f-partner').value, amounts:amounts, memo:sec.querySelector('.f-memo').value });
+  });
+  const body = { applicant: document.getElementById('applicant-code').value || document.getElementById('applicant-name').textContent, doc_type: document.querySelector('input[name=doc_type]:checked').value, storage_type: document.querySelector('input[name=storage_type]:checked').value, docs };
+  const res = await fetch('/api/receipts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const msg = document.getElementById('message');
+  if (res.ok) {
+    msg.textContent = '✅ 登録しました！'; msg.className = 'msg-ok';
+    setTimeout(() => { msg.className=''; document.getElementById('continue-check').checked ? location.reload() : location.href='/receipt'; }, 1500);
+  } else {
+    const d = await res.json().catch(()=>({}));
+    msg.textContent = '❌ ' + (d.error||'登録に失敗しました'); msg.className = 'msg-err';
+    setTimeout(() => msg.className='', 4000);
+  }
+}
+addDoc();
+</script>
+</body>
+</html>

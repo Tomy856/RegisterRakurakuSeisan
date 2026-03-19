@@ -1,0 +1,57 @@
+{
+  "name": "register-rakuraku",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-docker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql",
+        "humao.rest-client",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "go.toolsManagement.autoUpdate": true,
+        "go.useLanguageServer": true,
+        "editor.formatOnSave": true,
+        "[go]": {
+          "editor.defaultFormatter": "golang.go"
+        },
+        "sqltools.connections": [
+          {
+            "name": "rakuraku-mysql",
+            "driver": "MySQL",
+            "server": "db",
+            "port": 3306,
+            "database": "rakuraku",
+            "username": "rakuraku",
+            "password": "rakuraku"
+          }
+        ]
+      }
+    }
+  },
+
+  "forwardPorts": [8080, 13306],
+  "portsAttributes": {
+    "8080": { "label": "App Server", "onAutoForward": "openBrowser" },
+    "13306": { "label": "MySQL" }
+  },
+
+  "postCreateCommand": "go mod tidy && go install github.com/go-delve/delve/cmd/dlv@v1.26.1 && go install github.com/air-verse/air@v1.61.7",
+
+  "postStartCommand": "nohup air > /workspace/tmp/air.log 2>&1 &",
+
+  "remoteEnv": {
+    "DB_USER": "rakuraku",
+    "DB_PASSWORD": "rakuraku",
+    "DB_HOST": "db",
+    "DB_PORT": "3306",
+    "DB_NAME": "rakuraku"
+  }
+}

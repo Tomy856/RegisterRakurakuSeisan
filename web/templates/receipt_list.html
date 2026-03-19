@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>領収書・請求書 一覧</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .back-btn { background: white; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; font-size: 1rem; box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-decoration: none; color: #333; }
+    .header h1 { font-size: 1.2rem; flex: 1; }
+    .new-btn { background: #1a73e8; color: white; border: none; border-radius: 10px; padding: 9px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .new-btn:hover { background: #1558b0; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: 600; color: #555; }
+    td { padding: 11px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending    { background: #fff3cd; color: #856404; }
+    .badge-submitted  { background: #d4edda; color: #155724; }
+    .badge-error      { background: #f8d7da; color: #721c24; }
+    .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1.1rem; }
+    .del-btn:hover { color: #ea4335; }
+    .empty { text-align: center; color: #aaa; padding: 48px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <a href="/" class="back-btn">‹ 戻る</a>
+    <h1>🧾 領収書・請求書 一覧</h1>
+    <a href="/receipt/new" class="new-btn">＋ 新規登録</a>
+  </div>
+  <div class="card">
+    <div id="list-area">読み込み中...</div>
+  </div>
+</div>
+<script>
+async function load() {
+  const res = await fetch('/api/receipts');
+  const list = await res.json();
+  const el = document.getElementById('list-area');
+  if (!list || list.length === 0) {
+    el.innerHTML = '<div class="empty">📭 まだ登録がありません<br><small><a href="/receipt/new">新規登録する</a></small></div>';
+    return;
+  }
+  const badgeMap = { pending: ['未送信','badge-pending'], submitting: ['送信中…','badge-pending'], submitted: ['送信済み','badge-submitted'], error: ['エラー','badge-error'] };
+  el.innerHTML = `<table>
+    <thead><tr><th>登録日</th><th>申請者</th><th>書類区分</th><th>保存形式</th><th>状態</th><th></th></tr></thead>
+    <tbody>${list.map(r => {
+      const [label, cls] = badgeMap[r.status] || ['不明','badge-pending'];
+      return `<tr>
+        <td>${r.created_at ? r.created_at.split('T')[0] : '-'}</td>
+        <td>${r.applicant}</td>
+        <td>${r.doc_type}</td>
+        <td>${r.storage_type}</td>
+        <td><span class="badge ${cls}">${label}</span></td>
+        <td><button class="del-btn" onclick="del(${r.id})">🗑</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+async function del(id) {
+  if (!confirm('削除しますか？')) return;
+  await fetch('/api/receipts/' + id, { method: 'DELETE' });
+  load();
+}
+load();
+</script>
+</body>
+</html>

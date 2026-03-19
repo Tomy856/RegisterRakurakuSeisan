@@ -1,0 +1,273 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>交通費</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #333; padding: 20px; }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .back-btn { background: white; border: none; border-radius: 10px; padding: 8px 14px; cursor: pointer; font-size: 1rem; box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-decoration: none; color: #333; }
+    .header h1 { font-size: 1.2rem; color: #333; }
+    .container { max-width: 760px; margin: 0 auto; }
+    .card { background: white; border-radius: 14px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 20px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #444; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid #f0f4f8; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; font-size: 0.82rem; font-weight: 600; color: #555; margin-bottom: 5px; }
+    label .req { color: #ea4335; margin-left: 3px; }
+    input[type=text], input[type=date], input[type=number], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 9px;
+      font-size: 0.95rem; transition: border-color 0.2s; background: #fafafa;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #34a853; background: white; }
+    .row { display: flex; gap: 12px; }
+    .row .form-group { flex: 1; }
+    .radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .radio-group label {
+      display: flex; align-items: center; gap: 6px; font-size: 0.88rem; font-weight: 400; color: #333;
+      background: #f5f5f5; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      padding: 7px 14px; cursor: pointer; transition: all 0.15s;
+    }
+    .radio-group input[type=radio] { display: none; }
+    .radio-group label:has(input:checked) { border-color: #34a853; background: #e6f4ea; }
+
+    /* 明細テーブル */
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 12px; }
+    .detail-table th { background: #f5f5f5; padding: 9px 8px; text-align: left; font-weight: 600; color: #555; white-space: nowrap; }
+    .detail-table td { padding: 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .detail-table td input, .detail-table td select {
+      padding: 7px 8px; font-size: 0.85rem; border-radius: 7px;
+    }
+    .detail-table .td-date { width: 130px; }
+    .detail-table .td-route { min-width: 80px; }
+    .detail-table .td-amount { width: 90px; }
+    .detail-table .td-round { width: 80px; }
+    .detail-table .td-transport { width: 120px; }
+    .detail-table .td-memo { min-width: 100px; }
+    .detail-table .td-action { width: 40px; }
+    .remove-row { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1.1rem; }
+    .remove-row:hover { color: #ea4335; }
+
+    .add-detail-btn {
+      width: 100%; padding: 11px; background: #f0f4f8; border: 1.5px dashed #b0c0d0;
+      border-radius: 10px; color: #666; font-size: 0.92rem; cursor: pointer; transition: all 0.15s;
+    }
+    .add-detail-btn:hover { background: #e6f4ea; border-color: #34a853; color: #34a853; }
+
+    /* 合計 */
+    .total-bar {
+      background: #e6f4ea; border-radius: 10px; padding: 14px 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 700; color: #2d8e47; margin-bottom: 16px;
+    }
+    .total-bar .amount { font-size: 1.3rem; }
+
+    /* 添付 */
+    .dropzone {
+      border: 2px dashed #b0d8b8; border-radius: 12px; padding: 20px;
+      text-align: center; cursor: pointer; background: #f5fdf7; transition: all 0.2s;
+    }
+    .dropzone:hover { border-color: #34a853; background: #e6f4ea; }
+    .dropzone p { color: #888; font-size: 0.85rem; margin-top: 6px; }
+    .file-preview { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .file-tag { background: #e6f4ea; color: #2d8e47; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
+    .file-tag button { background: none; border: none; color: #888; cursor: pointer; }
+
+    .save-btn {
+      width: 100%; padding: 15px; background: #34a853; color: white;
+      border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .save-btn:hover { background: #2d8e47; }
+
+    #message { margin-top: 12px; padding: 12px; border-radius: 10px; display: none; text-align: center; font-weight: 600; }
+    .msg-ok  { background: #d4edda; color: #155724; display: block !important; }
+    .msg-err { background: #f8d7da; color: #721c24; display: block !important; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <a href="/" class="back-btn">‹ 戻る</a>
+    <h1>🚃 交通費</h1>
+  </div>
+
+  <!-- 基本情報 -->
+  <div class="card">
+    <div class="card-title">基本情報</div>
+    <div class="row">
+      <div class="form-group">
+        <label>プロジェクト<span class="req">*</span></label>
+        <input type="text" id="project" placeholder="プロジェクト名">
+      </div>
+      <div class="form-group">
+        <label>申請者<span class="req">*</span></label>
+        <input type="text" id="applicant" placeholder="山田 太郎">
+      </div>
+    </div>
+    <div class="row">
+      <div class="form-group">
+        <label>利用者（代理申請の場合）</label>
+        <input type="text" id="user-name" placeholder="本人申請の場合は空白">
+      </div>
+      <div class="form-group">
+        <label>支払い方法<span class="req">*</span></label>
+        <div class="radio-group">
+          <label><input type="radio" name="payment" value="法人クレジットカード" checked><span>法人クレジットカード</span></label>
+          <label><input type="radio" name="payment" value="その他"><span>その他</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>備考<span class="req">*</span></label>
+      <textarea id="remarks" rows="2" placeholder="用件・目的など"></textarea>
+    </div>
+  </div>
+
+  <!-- 明細 -->
+  <div class="card">
+    <div class="card-title">交通費明細</div>
+    <div style="overflow-x:auto">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th class="td-date">日付<span style="color:#ea4335">*</span></th>
+            <th class="td-route">訪問先</th>
+            <th class="td-route">出発<span style="color:#ea4335">*</span></th>
+            <th class="td-route">到着<span style="color:#ea4335">*</span></th>
+            <th class="td-amount">金額</th>
+            <th class="td-round">往復</th>
+            <th class="td-transport">交通機関</th>
+            <th class="td-memo">備考</th>
+            <th class="td-action"></th>
+          </tr>
+        </thead>
+        <tbody id="detail-tbody"></tbody>
+      </table>
+    </div>
+    <button class="add-detail-btn" onclick="addDetail()">＋ 明細を追加</button>
+
+    <div class="total-bar" style="margin-top:16px">
+      <span>合計金額</span>
+      <span class="amount">¥<span id="total">0</span></span>
+    </div>
+  </div>
+
+  <!-- 添付 -->
+  <div class="card">
+    <div class="card-title">添付ファイル</div>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+      <div style="font-size:1.8rem">📎</div>
+      <p>クリックまたはドラッグ＆ドロップ<br>PDF / JPG / PNG / HEIC 対応</p>
+    </div>
+    <input type="file" id="file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.heic" style="display:none">
+    <div class="file-preview" id="file-preview"></div>
+  </div>
+
+  <button class="save-btn" onclick="saveTraffic()">💾 保存する</button>
+  <div id="message"></div>
+</div>
+
+<script>
+let files = [];
+
+document.getElementById('file-input').addEventListener('change', e => addFiles(e.target.files));
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+
+function addFiles(fileList) {
+  Array.from(fileList).forEach(f => {
+    files.push(f);
+    const tag = document.createElement('div');
+    tag.className = 'file-tag';
+    tag.innerHTML = `📄 ${f.name} <button onclick="removeFile(this,'${f.name}')">✕</button>`;
+    document.getElementById('file-preview').appendChild(tag);
+  });
+}
+function removeFile(btn, name) { files = files.filter(f => f.name !== name); btn.closest('.file-tag').remove(); }
+
+function addDetail() {
+  const today = new Date().toISOString().split('T')[0];
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="td-date"><input type="date" class="f-date" value="${today}" onchange="calcTotal()"></td>
+    <td class="td-route"><input type="text" class="f-destination" placeholder="〇〇商事"></td>
+    <td class="td-route"><input type="text" class="f-from" placeholder="渋谷"></td>
+    <td class="td-route"><input type="text" class="f-to" placeholder="新宿"></td>
+    <td class="td-amount"><input type="number" class="f-amount" placeholder="0" min="0" onchange="calcTotal()"></td>
+    <td class="td-round">
+      <select class="f-round">
+        <option value="片道">片道</option>
+        <option value="往復">往復</option>
+        <option value="--">--</option>
+      </select>
+    </td>
+    <td class="td-transport">
+      <select class="f-transport">
+        <option value="">種別</option>
+        <option>電車</option><option>バス</option><option>タクシー</option>
+        <option>駐車場</option><option>新幹線利用</option><option>飛行機利用</option>
+        <option>ガソリン代</option><option>高速代</option>
+      </select>
+    </td>
+    <td class="td-memo"><input type="text" class="f-memo" placeholder="備考"></td>
+    <td class="td-action"><button class="remove-row" onclick="this.closest('tr').remove(); calcTotal()">✕</button></td>`;
+  document.getElementById('detail-tbody').appendChild(tr);
+}
+
+function calcTotal() {
+  let total = 0;
+  document.querySelectorAll('#detail-tbody .f-amount').forEach(el => total += parseFloat(el.value) || 0);
+  document.getElementById('total').textContent = total.toLocaleString();
+}
+
+async function saveTraffic() {
+  const details = [];
+  document.querySelectorAll('#detail-tbody tr').forEach(tr => {
+    details.push({
+      date:        tr.querySelector('.f-date').value,
+      destination: tr.querySelector('.f-destination').value,
+      from:        tr.querySelector('.f-from').value,
+      to:          tr.querySelector('.f-to').value,
+      amount:      parseFloat(tr.querySelector('.f-amount').value) || 0,
+      round:       tr.querySelector('.f-round').value,
+      transport:   tr.querySelector('.f-transport').value,
+      memo:        tr.querySelector('.f-memo').value,
+    });
+  });
+
+  const body = {
+    project:   document.getElementById('project').value,
+    applicant: document.getElementById('applicant').value,
+    user_name: document.getElementById('user-name').value,
+    payment:   document.querySelector('input[name=payment]:checked').value,
+    remarks:   document.getElementById('remarks').value,
+    details,
+  };
+
+  const res = await fetch('/api/traffic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const msg = document.getElementById('message');
+  if (res.ok) {
+    msg.textContent = '✅ 保存しました！';
+    msg.className = 'msg-ok';
+  } else {
+    const d = await res.json().catch(() => ({}));
+    msg.textContent = '❌ エラー: ' + (d.error || '保存に失敗しました');
+    msg.className = 'msg-err';
+  }
+  setTimeout(() => msg.className = '', 4000);
+}
+
+// 初期1件
+addDetail();
+</script>
+</body>
+</html>

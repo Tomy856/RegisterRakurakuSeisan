@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    working_dir: /workspace
+    command: sleep infinity
+    environment:
+      - DB_USER=rakuraku
+      - DB_PASSWORD=rakuraku
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=rakuraku
+      - RAKURAKU_URL=${RAKURAKU_URL:-}
+      - RAKURAKU_USER=${RAKURAKU_USER:-}
+      - RAKURAKU_PASSWORD=${RAKURAKU_PASSWORD:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: rakuraku
+      MYSQL_USER: rakuraku
+      MYSQL_PASSWORD: rakuraku
+    ports:
+      - "13306:3306"   # ホスト側を 13306 に変更（3306 は既に使用中のため）
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "rakuraku", "-prakuraku"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql-data:
