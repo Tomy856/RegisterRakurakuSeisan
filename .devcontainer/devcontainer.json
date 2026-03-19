@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "register-rakuraku",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
@@ -45,13 +45,14 @@
 
   "postCreateCommand": "go mod tidy && go install github.com/go-delve/delve/cmd/dlv@v1.26.1 && go install github.com/air-verse/air@v1.61.7",
 
-  "postStartCommand": "nohup air > /workspace/tmp/air.log 2>&1 &",
+  "postStartCommand": "mkdir -p /workspace/tmp && export GOPATH=$(go env GOPATH) && export PATH=$GOPATH/bin:$PATH && export GEMINI_API_KEY=$(grep -oP '(?<=GEMINI_API_KEY=).*' ~/.bashrc | head -1 || true) && nohup air > /workspace/tmp/air.log 2>&1 & echo $! > /workspace/tmp/air.pid || true",
 
   "remoteEnv": {
     "DB_USER": "rakuraku",
     "DB_PASSWORD": "rakuraku",
     "DB_HOST": "db",
     "DB_PORT": "3306",
-    "DB_NAME": "rakuraku"
+    "DB_NAME": "rakuraku",
+    "GEMINI_API_KEY": "${localEnv:GEMINI_API_KEY}"
   }
 }

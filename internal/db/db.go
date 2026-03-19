@@ -31,10 +31,12 @@ func Migrate(db *sql.DB) error {
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS receipts (
 			id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-			applicant    VARCHAR(100) NOT NULL COMMENT '申請者',
-			doc_type     VARCHAR(20)  NOT NULL COMMENT '書類区分(領収書/請求書)',
-			storage_type VARCHAR(20)  NOT NULL COMMENT '保存形式',
-			docs_json    JSON         NOT NULL COMMENT '書類明細JSON',
+			doc_type     VARCHAR(20)   NOT NULL COMMENT '書類区分(領収書/請求書)',
+			storage_type VARCHAR(20)   NOT NULL COMMENT '保存形式',
+			docs_json    JSON          NOT NULL COMMENT '書類明細JSON',
+			pdf_data     LONGBLOB               COMMENT 'PDFバイナリ',
+			pdf_name     VARCHAR(255)           COMMENT 'PDFファイル名',
+			md_text      MEDIUMTEXT             COMMENT 'AI読み取り結果MD',
 			status       ENUM('pending','submitting','submitted','error') NOT NULL DEFAULT 'pending',
 			error_msg    TEXT,
 			created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -44,12 +46,21 @@ func Migrate(db *sql.DB) error {
 		return err
 	}
 
+	// 既存テーブルへのカラム追加（既にある場合はスキップ）
+	cols := []struct{ col, def string }{
+		{"pdf_data", "LONGBLOB COMMENT 'PDFバイナリ'"},
+		{"pdf_name", "VARCHAR(255) COMMENT 'PDFファイル名'"},
+		{"md_text",  "MEDIUMTEXT COMMENT 'AI読み取り結果MD'"},
+	}
+	for _, c := range cols {
+		db.Exec(`ALTER TABLE receipts ADD COLUMN ` + c.col + ` ` + c.def)
+	}
+
 	// 交通費精算
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS traffic_expenses (
 			id           BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			project      VARCHAR(200) NOT NULL COMMENT 'プロジェクト',
-			applicant    VARCHAR(100) NOT NULL COMMENT '申請者',
 			user_name    VARCHAR(100) NOT NULL DEFAULT '' COMMENT '利用者(代理申請)',
 			payment      VARCHAR(50)  NOT NULL COMMENT '支払い方法',
 			remarks      TEXT         NOT NULL COMMENT '備考',

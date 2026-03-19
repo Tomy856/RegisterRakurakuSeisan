@@ -16,6 +16,7 @@ services:
       - RAKURAKU_URL=${RAKURAKU_URL:-}
       - RAKURAKU_USER=${RAKURAKU_USER:-}
       - RAKURAKU_PASSWORD=${RAKURAKU_PASSWORD:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:
@@ -31,7 +32,7 @@ services:
       MYSQL_USER: rakuraku
       MYSQL_PASSWORD: rakuraku
     ports:
-      - "13306:3306"   # ホスト側を 13306 に変更（3306 は既に使用中のため）
+      - "13306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:

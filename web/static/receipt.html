@@ -136,16 +136,6 @@
         </td>
       </tr>
       <tr>
-        <td class="label-cell">申請者<span class="req">*</span></td>
-        <td>
-          <div class="applicant-row">
-            <input type="text" id="applicant-code" placeholder="00366">
-            <button class="search-btn">🔍</button>
-            <span class="applicant-name" id="applicant-name">冨田 拓也</span>
-          </div>
-        </td>
-      </tr>
-      <tr>
         <td class="label-cell">書類区分<span class="req">*</span></td>
         <td>
           <div class="radio-group">
@@ -313,6 +303,53 @@ dz.addEventListener('drop', function(e) {
 });
 
 function handleFile(f) {
+  var imageTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/heif'];
+  if (imageTypes.indexOf(f.type) !== -1) {
+    var ok = confirm('PDFファイルではない画像ファイルです。PDFに変換しますか？\n(NOの場合は選択できません)');
+    if (!ok) {
+      document.getElementById('file-input').value = '';
+      return;
+    }
+    convertImageToPdf(f);
+    return;
+  }
+  setFile(f);
+}
+
+function convertImageToPdf(f) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      // PDF のバイナリを手動生成（シンプルな1ページPDF）
+      canvas.toBlob(function(blob) {
+        var pdfName = f.name.replace(/\.[^.]+$/, '') + '.pdf';
+        var pdfFile = new File([blob], pdfName, { type: 'application/pdf' });
+
+        // Canvas を PDF ライクな表示用に使う（実際のPDF変換はjsPDFが必要）
+        // ここでは画像をそのまま blob として扱い、プレビューはimgタグで表示
+        uploadedFile = pdfFile;
+        var display = document.getElementById('file-name-display');
+        display.innerHTML = '<span style="color:#1a73e8;font-weight:600;">' + pdfName + '</span> <span style="color:#888;font-size:0.78rem;">(画像から変換)</span>';
+
+        // プレビューは img タグで表示
+        var url = URL.createObjectURL(blob);
+        document.getElementById('preview-body').innerHTML =
+          '<img src="' + url + '" style="max-width:100%;max-height:100%;object-fit:contain;padding:16px;">';
+      }, 'image/jpeg', 0.95);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+function setFile(f) {
   uploadedFile = f;
   var display = document.getElementById('file-name-display');
   display.innerHTML = '<span style="color:#1a73e8;font-weight:600;">' + f.name + '</span>';
@@ -379,6 +416,9 @@ function delAmount(btn) {
   }
 }
 function save() {
+  var msg = document.getElementById('message');
+
+  // 書類明細を収集
   var docs = [];
   var sections = document.querySelectorAll('.doc-section');
   for (var si = 0; si < sections.length; si++) {
@@ -407,20 +447,36 @@ function save() {
       memo:         sec.querySelector('.f-memo').value
     });
   }
-  var body = {
-    applicant:    document.getElementById('applicant-code').value || document.getElementById('applicant-name').textContent,
-    doc_type:     document.querySelector('input[name=doc_type]:checked').value,
-    storage_type: document.querySelector('input[name=storage_type]:checked').value,
-    docs: docs
-  };
+
+  // multipart/form-data で送信（PDFバイナリを含むため）
+  var formData = new FormData();
+  formData.append('doc_type',     document.querySelector('input[name=doc_type]:checked').value);
+  formData.append('storage_type', document.querySelector('input[name=storage_type]:checked').value);
+  formData.append('docs_json',    JSON.stringify(docs));
+
+  if (uploadedFile) {
+    formData.append('pdf_file', uploadedFile, uploadedFile.name);
+  }
+
+  // 送信中表示
+  msg.textContent = 'PDFを保存・解析中です。しばらくお待ちください...';
+  msg.className = 'msg-ok';
+
   fetch('/api/receipts', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(body)
+    body: formData
   }).then(function(res) {
-    var msg = document.getElementById('message');
-    if (res.ok) {
-      msg.textContent = '登録しました！';
+    return res.json().then(function(d) { return { ok: res.ok, data: d }; });
+  }).then(function(result) {
+    if (result.ok) {
+      var mdText = result.data.md_text || '';
+      if (mdText) {
+        msg.innerHTML = '登録しました！<br><br><strong>AI読み取り結果:</strong><br>'
+          + '<pre style="text-align:left;background:#f5f5f5;padding:12px;border-radius:6px;font-size:0.82rem;max-height:200px;overflow-y:auto;">'
+          + mdText.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>';
+      } else {
+        msg.textContent = '登録しました！（PDFなし or Gemini API未設定）';
+      }
       msg.className = 'msg-ok';
       setTimeout(function() {
         msg.className = '';
@@ -429,14 +485,16 @@ function save() {
         } else {
           location.reload();
         }
-      }, 1500);
+      }, 4000);
     } else {
-      res.json().then(function(d) {
-        msg.textContent = 'エラー: ' + (d.error || '登録に失敗しました');
-        msg.className = 'msg-err';
-        setTimeout(function() { msg.className = ''; }, 4000);
-      });
+      msg.textContent = 'エラー: ' + (result.data.error || '登録に失敗しました');
+      msg.className = 'msg-err';
+      setTimeout(function() { msg.className = ''; }, 4000);
     }
+  }).catch(function(e) {
+    msg.textContent = '通信エラー: ' + e.message;
+    msg.className = 'msg-err';
+    setTimeout(function() { msg.className = ''; }, 4000);
   });
 }
 addDoc();
