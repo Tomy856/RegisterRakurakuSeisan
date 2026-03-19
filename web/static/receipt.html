@@ -298,34 +298,37 @@
 
 <script>
 let uploadedFile = null;
+const today = new Date();
 
-document.getElementById('file-input').addEventListener('change', e => {
+document.getElementById('file-input').addEventListener('change', function(e) {
   if (e.target.files.length > 0) handleFile(e.target.files[0]);
 });
 const dz = document.getElementById('dropzone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('drag-over');
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag-over'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
   if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
 });
 
 function handleFile(f) {
   uploadedFile = f;
-  document.getElementById('file-name-display').innerHTML = '<span style="color:#1a73e8;font-weight:600;">' + f.name + '</span>';
+  var display = document.getElementById('file-name-display');
+  display.innerHTML = '<span style="color:#1a73e8;font-weight:600;">' + f.name + '</span>';
   if (f.type === 'application/pdf') showPdfPreview(f);
 }
 function showPdfPreview(file) {
-  const url = URL.createObjectURL(file);
-  document.getElementById('preview-body').innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;"></iframe>';
-  document.getElementById('preview-body').innerHTML = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;"></iframe>';
+  var url = URL.createObjectURL(file);
+  var iframe = '<iframe src="' + url + '" style="width:100%;height:100%;border:none;"></iframe>';
+  document.getElementById('preview-body').innerHTML = iframe;
 }
 
-let docCount = 0;
+var docCount = 0;
 function addDoc() {
   docCount++;
-  const tmpl = document.getElementById('doc-tmpl').content.cloneNode(true);
-  const sec = tmpl.querySelector('.doc-section');
+  var tmpl = document.getElementById('doc-tmpl').content.cloneNode(true);
+  var sec = tmpl.querySelector('.doc-section');
   sec.querySelector('.doc-num').textContent = docCount;
   sec.querySelector('.f-trade-y').value = today.getFullYear();
   sec.querySelector('.f-trade-m').value = today.getMonth() + 1;
@@ -341,55 +344,100 @@ function removeDoc(btn) {
   renumber();
 }
 function renumber() {
-  document.querySelectorAll('.doc-section .doc-num').forEach((el, i) => el.textContent = i + 1);
+  var nums = document.querySelectorAll('.doc-section .doc-num');
+  for (var i = 0; i < nums.length; i++) nums[i].textContent = i + 1;
   docCount = document.querySelectorAll('.doc-section').length;
 }
 function setToday(btn, type) {
-  const s = btn.closest('.doc-section');
+  var s = btn.closest('.doc-section');
   s.querySelector('.f-' + type + '-y').value = today.getFullYear();
   s.querySelector('.f-' + type + '-m').value = today.getMonth() + 1;
   s.querySelector('.f-' + type + '-d').value = today.getDate();
 }
 function addAmount(btn) {
-  const list = btn.previousElementSibling;
-  const num = list.querySelectorAll('.amount-row').length + 1;
-  const row = document.createElement('div');
+  var list = btn.previousElementSibling;
+  var num = list.querySelectorAll('.amount-row').length + 1;
+  var row = document.createElement('div');
   row.className = 'amount-row';
-  row.innerHTML = '<span class="num">' + num + '.</span>' +
-    <input type="number" class="f-amount" placeholder="0" min="0" value="0">
-    <select class="f-unit"><option>円</option><option>USD</option><option>EUR</option><option>CAD</option><option>AUD</option><option>NTD</option><option>km(ガソリン)</option></select>
-    '<button class="del-amt" onclick="delAmount(this)">&#x2715;</button>';
+  row.innerHTML = '<span class="num">' + num + '.</span>'
+    + '<input type="number" class="f-amount" placeholder="0" min="0" value="0">'
+    + '<select class="f-unit"><option>円</option><option>USD</option><option>EUR</option><option>CAD</option><option>AUD</option><option>NTD</option><option>km(ガソリン)</option></select>'
+    + '<button class="del-amt" onclick="delAmount(this)">×</button>';
   list.appendChild(row);
-  list.querySelectorAll('.del-amt').forEach(b => b.style.display = '');
+  var delBtns = list.querySelectorAll('.del-amt');
+  for (var i = 0; i < delBtns.length; i++) delBtns[i].style.display = '';
 }
 function delAmount(btn) {
-  const list = btn.closest('.amount-list');
+  var list = btn.closest('.amount-list');
   if (list.querySelectorAll('.amount-row').length > 1) {
     btn.closest('.amount-row').remove();
-    list.querySelectorAll('.amount-row .num').forEach((n, i) => n.textContent = (i+1) + '.');
-    if (list.querySelectorAll('.amount-row').length === 1) list.querySelector('.del-amt').style.display = 'none';
+    var nums = list.querySelectorAll('.amount-row .num');
+    for (var i = 0; i < nums.length; i++) nums[i].textContent = (i + 1) + '.';
+    if (list.querySelectorAll('.amount-row').length === 1) {
+      list.querySelector('.del-amt').style.display = 'none';
+    }
   }
 }
-async function save() {
-  const docs = [];
-  document.querySelectorAll('.doc-section').forEach(sec => {
-    const amounts = [];
-    sec.querySelectorAll('.amount-row').forEach(r => amounts.push({ value: parseFloat(r.querySelector('.f-amount').value)||0, unit: r.querySelector('.f-unit').value }));
-    const y=sec.querySelector('.f-trade-y').value, m=String(sec.querySelector('.f-trade-m').value).padStart(2,'0'), d=String(sec.querySelector('.f-trade-d').value).padStart(2,'0');
-    const ry=sec.querySelector('.f-receive-y').value, rm=String(sec.querySelector('.f-receive-m').value).padStart(2,'0'), rd=String(sec.querySelector('.f-receive-d').value).padStart(2,'0');
-    docs.push({ trade_date: y+'-'+m+'-'+d, receive_date: ry+'-'+rm+'-'+rd, has_reg_num:sec.querySelector('.f-has-reg').checked, reg_num:sec.querySelector('.f-reg-num').value, partner:sec.querySelector('.f-partner').value, amounts:amounts, memo:sec.querySelector('.f-memo').value });
-  });
-  const body = { applicant: document.getElementById('applicant-code').value || document.getElementById('applicant-name').textContent, doc_type: document.querySelector('input[name=doc_type]:checked').value, storage_type: document.querySelector('input[name=storage_type]:checked').value, docs };
-  const res = await fetch('/api/receipts', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-  const msg = document.getElementById('message');
-  if (res.ok) {
-    msg.textContent = '✅ 登録しました！'; msg.className = 'msg-ok';
-    setTimeout(() => { msg.className=''; document.getElementById('continue-check').checked ? location.reload() : location.href='/receipt'; }, 1500);
-  } else {
-    const d = await res.json().catch(()=>({}));
-    msg.textContent = '❌ ' + (d.error||'登録に失敗しました'); msg.className = 'msg-err';
-    setTimeout(() => msg.className='', 4000);
+function save() {
+  var docs = [];
+  var sections = document.querySelectorAll('.doc-section');
+  for (var si = 0; si < sections.length; si++) {
+    var sec = sections[si];
+    var amounts = [];
+    var rows = sec.querySelectorAll('.amount-row');
+    for (var ri = 0; ri < rows.length; ri++) {
+      amounts.push({
+        value: parseFloat(rows[ri].querySelector('.f-amount').value) || 0,
+        unit: rows[ri].querySelector('.f-unit').value
+      });
+    }
+    var y  = sec.querySelector('.f-trade-y').value;
+    var m  = ('0' + sec.querySelector('.f-trade-m').value).slice(-2);
+    var d  = ('0' + sec.querySelector('.f-trade-d').value).slice(-2);
+    var ry = sec.querySelector('.f-receive-y').value;
+    var rm = ('0' + sec.querySelector('.f-receive-m').value).slice(-2);
+    var rd = ('0' + sec.querySelector('.f-receive-d').value).slice(-2);
+    docs.push({
+      trade_date:   y + '-' + m + '-' + d,
+      receive_date: ry + '-' + rm + '-' + rd,
+      has_reg_num:  sec.querySelector('.f-has-reg').checked,
+      reg_num:      sec.querySelector('.f-reg-num').value,
+      partner:      sec.querySelector('.f-partner').value,
+      amounts:      amounts,
+      memo:         sec.querySelector('.f-memo').value
+    });
   }
+  var body = {
+    applicant:    document.getElementById('applicant-code').value || document.getElementById('applicant-name').textContent,
+    doc_type:     document.querySelector('input[name=doc_type]:checked').value,
+    storage_type: document.querySelector('input[name=storage_type]:checked').value,
+    docs: docs
+  };
+  fetch('/api/receipts', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  }).then(function(res) {
+    var msg = document.getElementById('message');
+    if (res.ok) {
+      msg.textContent = '登録しました！';
+      msg.className = 'msg-ok';
+      setTimeout(function() {
+        msg.className = '';
+        if (!document.getElementById('continue-check').checked) {
+          location.href = '/receipt';
+        } else {
+          location.reload();
+        }
+      }, 1500);
+    } else {
+      res.json().then(function(d) {
+        msg.textContent = 'エラー: ' + (d.error || '登録に失敗しました');
+        msg.className = 'msg-err';
+        setTimeout(function() { msg.className = ''; }, 4000);
+      });
+    }
+  });
 }
 addDoc();
 </script>
